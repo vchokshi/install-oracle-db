@@ -1,0 +1,160 @@
+---
+  - name: Create groups
+    group:
+      name: "{{ oracle_install_group }}"
+      state: present
+
+  - name: add extra groups
+    group:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - dba
+      - oper
+
+  - name: Create user
+    user:
+      name: oracle
+      group: oinstall
+
+  - name: Add extra groups
+    user:
+      name: oracle
+      groups: "{{ item }}"
+      append: yes
+    with_items:
+      - dba
+      - oper
+
+  - name: swap - remove current swaps from fstab
+    lineinfile:
+      dest: /etc/fstab
+      regexp: '^/[\S]+\s+none\s+swap '
+      state: absent
+    become: yes
+
+  - name: swap - disable swap
+    command: swapoff --all
+    ignore_errors: yes
+    become: yes
+
+  - name: Create the oracle directory
+    file:
+      state: directory
+      path: "{{oracle_dir}}"
+      owner: "{{oracle_user}}"
+      group: "{{oracle_install_group}}"
+      mode: 0775
+
+  - name: swap - create swap file
+    command: dd if=/dev/zero of=/oracle/swapfile bs=1M count=1000
+    become: yes
+
+  - name: swap - make swap
+    command: mkswap /oracle/swapfile
+    become: yes
+
+  - name: swap - add to fstab
+    mount:
+      name: swap
+      src: /oracle/swapfile
+      fstype: swap
+      state: present
+    become: yes
+
+  - name: swap - swap on
+    command: swapon /oracle/swapfile
+    become: yes
+
+  - name: fix host file 127.0.0.1 entry
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '^127\.0\.0\.1'
+      line: '127.0.0.1 localhost localhost.localdomain localhost4 localhost4.localdomain4'
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Install required libraries
+    yum:
+      name: "{{item}}"
+      state: present
+    with_items:
+      - binutils
+      - compat-libcap1
+      - gcc
+      - gcc-c++
+      - glibc
+      - glibc.i686
+      - glibc-devel
+      - glibc-devel.i686
+      - ksh
+      - libaio.i686
+      - libaio-devel
+      - libaio-devel.i686
+      - libstdc++.i686
+      - libstdc++-devel
+      - libstdc++-devel.i686
+      - libXi
+      - libXi.i686
+      - libXtst
+      - libXtst.i686
+      - sysstat
+      - unixODBC
+      - unzip
+
+  - name: Change kernel parameters
+    sysctl:
+      name: "{{ item.key }}"
+      value: "{{ item.value }}"
+      state: present
+    with_dict: "{{kernel_params}}"
+
+  - name: Add oracle user limits
+    lineinfile: dest=/etc/security/limits.conf line='{{ oracle_user }} {{ item.limit }} {{ item.type}} {{ item.value }}'
+    with_items:
+      - { limit: 'soft', type: nofile, value: '{{ soft_no_file }}' }
+      - { limit: 'hard', type: nofile, value: '{{ hard_no_file }}' }
+      - { limit: 'soft', type: nproc, value: '{{ soft_nproc }}' }
+      - { limit: 'hard', type: nproc, value: '{{ hard_nproc }}' }
+      - { limit: 'soft', type: stack, value: '{{ soft_stack }}' }
+      - { limit: 'hard', type: stack, value: '{{ hard_stack }}' }
+      - { limit: 'soft', type: memlock, value: '{{ soft_memlock }}' }
+      - { limit: 'hard', type: memlock, value: '{{ hard_memlock }}' }
+
+  - name: Create Oracle Base directory
+    file:
+      state: directory
+      path: "{{ oracle_base }}"
+      owner: "{{ oracle_user }}"
+      group: "{{ oracle_install_group }}"
+  #
+  - name: Copy disable_trans_hugepages script
+    copy:
+      src: disable_trans_hugepages.sh
+      dest: '/tmp/disable_trans_hugepages.sh'
+      mode: 755
+
+  - name: Disable Transparent Huge Pages
+    command: '/tmp/disable_trans_hugepages.sh'
+
+  - name: configure kernel for hugepages
+    sysctl: name="vm.nr_hugepages" value="{{ hugepages_nr }}" state=present
+    tags:
+      - hugepages
+
+  - name: Create folder for installation files
+    file:
+      state: directory
+      path: "{{installation_folder}}"
+      owner: "{{oracle_user}}"
+      group: "{{oracle_install_group}}"
+      mode: 0775
+
+  - name: Create folder for inventory files
+    file:
+      state: directory
+      path: "{{ inventory_location }}"
+      owner: "{{oracle_user}}"
+      group: "{{oracle_install_group}}"
+      mode: 0775

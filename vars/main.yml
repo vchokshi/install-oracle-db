@@ -1,0 +1,16 @@
+---
+  db_domain: 'orcl'
+
+  db_name: 'ORCL'
+  db_unique_name: '{{db_name}}'
+  dbhome_name: '{{db_name}}'
+
+  oracle_sid: '{{db_name}}'
+  oracle_globalname: '{{db_domain}}.{{dbhome_name}}.private'
+
+  oracle_dir: /oracle
+  oracle_base: /oracle/app
+  oracle_home: '{{ oracle_base }}/{{ oracle_user }}/product/{{ oracle_install_version }}/{{ dbhome_name }}'
+  oracle_install_version: '12201'
+  oracle_user: oracle
+  oracle_install_group: oinstall

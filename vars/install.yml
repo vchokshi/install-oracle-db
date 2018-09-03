@@ -1,0 +1,91 @@
+installation_folder: '{{ oracle_base}}/installation'
+
+server_hostname: '{{ ansible_fqdn }}'
+oracle_hostname: '{{ server_hostname }}'
+
+inventory_os_group: '{{ oracle_install_group }}'
+inventory_location: '{{oracle_base}}/inventory'
+
+from_location: '{{installation_folder}}/database/stage/products.xml'
+
+installer_archives:
+  - 'linuxx64_12201_database.zip'
+
+oracle_home: '{{ oracle_base }}/{{ oracle_user }}/product/{{ oracle_install_version }}/{{ dbhome_name }}'
+
+installer: '{{installation_folder}}/database/runInstaller'
+
+install_db: INSTALL_DB_SWONLY
+oracle_edition: 'EE'
+oracle_dba_group: dba
+oracle_oper_group: oper
+oracle_database_type: 'GENERAL_PURPOSE'
+
+create_container_database: 'false'
+number_of_pdbs: '1'
+oracle_conf_as_container_db: 'false'
+pdb_prefix: 'db'
+oracle_pdb_name: 'db01'
+oracle_charset: 'AL32UTF8'
+
+oracle_memory_option: 'false'
+
+# memory target
+oracle_memory_mb: 4096
+oracle_install_samples: 'true'
+oracle_management_option: 'DEFAULT'
+oracle_enable_recovery: 'false'
+oracle_storage_type: 'FILE_SYSTEM_STORAGE'
+oracle_dataloc: '{{ oracle_base }}/oradata'
+oracle_recoveryloc: '{{ oracle_base }}/recovery_area'
+oracle_auditloc: '{{ oracle_base }}/admin/{{db_name}}/adump'
+
+oracle_decline_security_updates: 'yes'
+hugepages_nr: 578
+
+oracle_os_user_pass: 'changeit'
+oracle_pass_all_users: oracle
+
+# Oracle user limits
+soft_no_file: 4096
+hard_no_file: 65536
+soft_nproc: 2047
+hard_nproc: 16384
+soft_stack: 10240
+hard_stack: 32768
+
+  # mem lock 90% of RAM
+soft_memlock: 1887437
+hard_memlock: 1887437
+
+kernel_params:
+  # Shared memory and semaphore
+  # look for document 226209.1 in oracle support for details
+  kernel.sem: 250 32000 100 128
+
+  kernel.shmmni: 4096
+
+  # 1.5 GB Shared memory 500mb for linux kernel (for 2GB virtual machine)
+  kernel.shmall: 1572864
+
+  # 1 GB Half of the physical memory (for 2GB virtual machine)
+  kernel.shmmax: 1759218604416
+
+  # For 1Gbps with 1ms latency 16MB buffer
+  net.core.rmem_max: 16777216
+  net.core.wmem_max: 16777216
+  net.ipv4.tcp_rmem: 4096 87380 16777216
+  net.ipv4.tcp_wmem: 4096 65536 16777216
+
+  #  Minimize swap file use
+  vm.swappiness: 10
+  vm.dirty_background_ratio: 5
+  vm.dirty_ratio: 10
+  # Max open file descriptors 512 * db processes + room for os
+  fs.file-max: 409600
+  # Shorten keep alive of connections
+  net.ipv4.tcp_keepalive_time: 300
+  net.ipv4.tcp_keepalive_intvl: 60
+  net.ipv4.tcp_keepalive_probes: 10
+  # maximize port range
+  net.ipv4.ip_local_port_range: 9000 65500

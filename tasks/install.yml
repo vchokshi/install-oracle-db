@@ -1,0 +1,22 @@
+
+- name: Copy installer archives from S3
+  command: 'aws s3 cp s3://installer-archives/{{item}} {{installation_folder}}'
+  with_items: '{{ installer_archives }}'
+
+- name: Extract installation files
+  unarchive:
+     src: "{{ installation_folder }}/{{ item }}"
+     dest: "{{ installation_folder }}"
+     remote_src: true
+     creates: "{{installation_folder}}/database/welcome.html"
+  with_items: "{{ installer_archives }}"
+
+- name: Copy our installer file over
+  template:
+    src: install.sh
+    dest: "{{installation_folder}}"
+    mode: 0755
+
+- name: Install Product
+  become_user: "{{ oracle_user }}"
+  command: "{{installation_folder}}/install.sh"

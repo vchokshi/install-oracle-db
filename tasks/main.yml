@@ -1,0 +1,8 @@
+---
+  - name: Include vars in the vars directory
+    include_vars:
+      dir: 'vars'
+
+  - include: pre-install.yml
+  - include: install.yml
+  - include: post-install.yml

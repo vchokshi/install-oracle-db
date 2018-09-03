@@ -1,0 +1,39 @@
+
+- name: Execute DB home root command
+  become: yes
+  become_user: root
+  command: '{{ oracle_home }}/root.sh'
+
+- name: Execute Inventory root command
+  become: yes
+  become_user: root
+  command: '{{ inventory_location }}/orainstRoot.sh'
+
+- name: create oracle home variable
+  become_user: "{{ oracle_user }}"
+  lineinfile: dest='/home/{{ oracle_user }}/.bashrc' line='export ORACLE_HOME={{ oracle_home }}'
+
+- name: create oracle base variable
+  become_user: "{{ oracle_user }}"
+  lineinfile: dest='/home/{{ oracle_user }}/.bashrc' line='export ORACLE_BASE={{ oracle_base }}'
+
+- name: create oracle sid variable
+  become_user: "{{ oracle_user }}"
+  lineinfile: dest='/home/{{ oracle_user }}/.bashrc' line='export ORACLE_SID={{ oracle_sid }}'
+
+- name: add oracle home bin folder
+  become_user: "{{ oracle_user }}"
+  lineinfile: dest='/home/{{ oracle_user }}/.bashrc' line='export PATH=$PATH:$ORACLE_HOME/bin'
+
+- name: copy init.d oracle script to /etc/init.d
+  become: yes
+  become_user: root
+  template:
+    src: oradb.j2
+    dest: /etc/init.d/oradb
+    mode: 0750
+
+- name: enable oradb script to run at startup
+  become: yes
+  become_user: root
+  command: 'chkconfig --add oradb'
